@@ -29,6 +29,16 @@ db.on('connected', () => console.log('Connected to MongoDB'));
 db.on('disconnected', () => console.log('Disconnected from MongoDB'));
 db.on('error', (err) => console.log('MongoDB Error: ' + err.message));
 // =======================================
+//           SET UP PEOPLE MODEL
+// =======================================
+const peopleSchema = new mongoose.Schema({
+    name: String,
+    image: String,
+    title: String
+}, { timestamps: true });
+
+const People = mongoose.model('People', peopleSchema);
+// =======================================
 //               MIDDLEWARE
 // =======================================
 app.use(express.json()); // this creates req.body using incoming JSON from our req's
