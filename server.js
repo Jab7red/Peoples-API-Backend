@@ -51,6 +51,25 @@ app.get('/', (req, res) => {
     res.send('welcome to the people api');
 });
 // =======================================
+//                 ROUTES
+// =======================================
+// INDEX
+app.get('/people', async (req, res) => {
+    try {
+        res.json(await People.find({}));
+    } catch (error) {
+        res.status(400).json(error);
+    }
+});
+// CREATE
+app.post('/people', async (req, res) => {
+    try {
+        res.json(await People.create(req.body));
+    } catch (error) {
+        res.status(400).json(error);
+    }
+});
+// =======================================
 //              APP LISTENER
 // =======================================
 app.listen(PORT, () => {
