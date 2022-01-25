@@ -69,6 +69,25 @@ app.post('/people', async (req, res) => {
         res.status(400).json(error);
     }
 });
+// UPDATE
+app.put('/people/:id', async (req, res) => {
+    try {
+        res.json(await People.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        { new: true }));
+    } catch (error) {
+        res.json(400).json(error);
+    }
+});
+// DELETE
+app.delete('/people/:id', async (req, res) => {
+    try {
+        res.json(await People.findByIdAndDelete(req.params.id))
+    } catch (error) {
+        res.json(400).json(error);
+    }
+});
 // =======================================
 //              APP LISTENER
 // =======================================
