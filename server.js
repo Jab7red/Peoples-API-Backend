@@ -5,6 +5,7 @@ const express = require('express');
 const morgan = require('morgan');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const admin = require("firebase-admin");
 // =======================================
 //         INITIALIZE EXPRESS APP
 // =======================================
@@ -16,7 +17,13 @@ require('dotenv').config();
 // =======================================
 //       EXPOSE OUR CONFIG VARIABLES
 // =======================================
-const { MONGODB_URL, PORT = 4000 } = process.env;
+const { MONGODB_URL, PORT = 4000, GOOGLE_CREDENTIALS } = process.env;
+
+const serviceAccount = JSON.parse(GOOGLE_CREDENTIALS);
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
 // =======================================
 //           DATABASE CONNECTION
 // =======================================
@@ -34,7 +41,8 @@ db.on('error', (err) => console.log('MongoDB Error: ' + err.message));
 const peopleSchema = new mongoose.Schema({
     name: String,
     image: String,
-    title: String
+    title: String,
+    uid: String
 }, { timestamps: true });
 
 const People = mongoose.model('People', peopleSchema);
@@ -44,6 +52,28 @@ const People = mongoose.model('People', peopleSchema);
 app.use(express.json()); // this creates req.body using incoming JSON from our req's
 app.use(morgan('dev'));
 app.use(cors());
+
+app.use(async function(req, res, next) {
+    try {
+        const token = req.get('Authorization');
+        if(!token) return next();
+
+        const user = await admin.auth().verifyIdToken(token.replace("Bearer ", ""));
+        if(!user) throw new Error('Something went wrong');
+
+        req.user = user;
+        next();
+
+    } catch (error) {
+        res.status(400).json(error);
+    }
+});
+
+function isAuthenticated(req, res, next) {
+    if(!req.user) return res.status(401).json({message: 'you must be logged in first'})
+    next();
+}
+
 // =======================================
 //               TEST ROUTE
 // =======================================
@@ -54,16 +84,18 @@ app.get('/', (req, res) => {
 //                 ROUTES
 // =======================================
 // INDEX
-app.get('/people', async (req, res) => {
+app.get('/people', isAuthenticated, async (req, res) => {
     try {
-        res.json(await People.find({}));
+        res.json(await People.find({uid: req.user.uid}));
     } catch (error) {
         res.status(400).json(error);
     }
 });
 // CREATE
-app.post('/people', async (req, res) => {
+app.post('/people', isAuthenticated, async (req, res) => {
+
     try {
+        req.body.uid = req.user.uid;
         res.json(await People.create(req.body));
     } catch (error) {
         res.status(400).json(error);
